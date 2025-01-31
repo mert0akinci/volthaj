@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>En Yakın Şarj İstasyonları</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="data:,"> <!-- Favicon hatasını engelle -->
+
+    <script>
+        function getLocation() {
+            if (!sessionStorage.getItem("locationSent") && navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            }
+        }
+
+        function showPosition(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+
+            console.log("Konum alındı:", lat, lon);
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lon;
+
+            console.log("Form gönderiliyor...");
+            document.getElementById('locationForm').submit();
+
+            // Konum bir kez alındı, tekrar gönderme
+            sessionStorage.setItem("locationSent", "true");
+        }
+
+        function showError(error) {
+            alert("Konum bilgisi alınamadı: " + error.message);
+        }
+
+        window.onload = function () {
+            if (!window.location.search) {
+                getLocation();
+            }
+        };
+    </script>
+</head>
+
+<body>
+    <h1>En Yakın Şarj İstasyonları</h1>
+
+    <!-- Konum gönderme butonunu kaldırdık -->
+    <form id="locationForm" method="POST">
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+    </form>
+
+    {% if error %}
+    <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    {% if stations %}
+    <ul class="station-list">
+        {% for station in stations %}
+        <li class="station-item">
+            <h2>{{ station['AddressInfo']['Title'] }}</h2>
+            <p><strong>Mesafe:</strong> {{ "%.2f"|format(station['distance']) }} km</p>
+            <p><strong>Tahmini Varış Süresi:</strong> {{ station['eta'] }} dakika</p>
+
+            {% if station['connection_info'] %}
+            <p>{{ station['connection_info'] }}</p>
+            {% endif %}
+
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ station['AddressInfo']['Latitude'] }},{{ station['AddressInfo']['Longitude'] }}"
+                target="_blank">Google Maps'te Aç</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</body>
+
+</html>
